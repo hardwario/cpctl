@@ -147,6 +147,14 @@ def config_channel(ctx, set=None):
     click.echo(ctx.obj['at'].command("$CHANNEL?")[0][1:])
 
 
+@cli.command('info')
+@click.pass_context
+def info(ctx):
+    select_device(ctx)
+    click.echo('Model: ' + ctx.obj['at'].command("+CGMM")[0][7:])
+    click.echo('ID:    ' + ctx.obj['at'].command("+CGSN")[0][7:])
+
+
 def main():
     '''Application entry point.'''
     try:
