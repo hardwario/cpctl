@@ -6,9 +6,11 @@ import sys
 import time
 import serial
 
+
 class ATException(Exception):
     '''Generic communication error exception.'''
     pass
+
 
 class AT:
     '''Class AT communication with device.'''
@@ -62,4 +64,3 @@ class AT:
         self._connect()
         self._ser.write(command.encode('ascii'))
         return self._read_response()
-

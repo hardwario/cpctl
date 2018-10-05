@@ -10,6 +10,9 @@ import click
 import re
 from .at import AT, ATException
 
+__version__ = '@@VERSION@@'
+
+
 class CliException(Exception):
     '''Generic cli error exception.'''
     pass
@@ -26,6 +29,9 @@ def get_ports():
 def select_device(ctx):
     if 'at' not in ctx.obj:
         ports = get_ports()
+        if not ports:
+            raise CliException("Unknown device")
+
         for i, port in enumerate(ports):
             click.echo("%i %s" % (i, port[0]), err=True)
         d = click.prompt('Please enter device')
@@ -43,8 +49,8 @@ def select_device(ctx):
 
 
 @click.group()
-@click.version_option()
 @click.option('--device', '-d', type=str, help='Device path.')
+@click.version_option(version=__version__)
 @click.pass_context
 def cli(ctx, device=None):
     '''Cooper Control Tool.'''
@@ -108,7 +114,7 @@ def node_detach(ctx, serial):
 
     node_list = ctx.obj['at'].command("$LIST")
 
-    if not serial in node_list:
+    if serial not in node_list:
         raise CliException("Node is not in node list")
 
     ctx.obj['at'].command("$DETACH=" + serial)
@@ -133,15 +139,15 @@ def config(ctx):
 
 
 @config.command('channel')
-@click.option('--set', type=int, help='New cahnnel')
+@click.option('--set', 'set_channel', type=int, help='New cahnnel')
 @click.pass_context
-def config_channel(ctx, set=None):
+def config_channel(ctx, set_channel=None):
     '''Set channel'''
-    if set != None:
-        if set < 0 or set > 20:
+    if set_channel is not None:
+        if set_channel < 0 or set_channel > 20:
             raise CliException("Bad channel range")
 
-        ctx.obj['at'].command("$CHANNEL=%d" % set)
+        ctx.obj['at'].command("$CHANNEL=%d" % set_channel)
         ctx.obj['at'].command("&W")
 
     click.echo(ctx.obj['at'].command("$CHANNEL?")[0][1:])
