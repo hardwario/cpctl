@@ -3,11 +3,11 @@ from setuptools import setup
 setup(
     name='cpctl',
     packages=['cpctl'],
-    version='1.3.0',
+    version='@@VERSION@@',
     description='Cooper Control Tool',
     url='https://github.com/blavka/cpctl',
-    author='Karel Blavka',
-    author_email='karel.blavka@hardwario.com',
+    author='HARDWARIO s.r.o.',
+    author_email='ask@hardwario.com',
     license='MIT',
     keywords = ['cooper', 'cli', 'tool'],
     classifiers=[
