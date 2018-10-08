@@ -1,5 +1,9 @@
 # Cooper Control Tool
 
+[![Travis](https://img.shields.io/travis/hardwario/cpctl/master.svg)](https://travis-ci.org/hardwario/cpctl)
+[![Release](https://img.shields.io/github/release/hardwario/cpctl.svg)](https://github.com/hardwario/cpctl/releases)
+[![License](https://img.shields.io/github/license/hardwario/cpctl.svg)](https://github.com/hardwario/cpctl/blob/master/LICENSE)
+
 This is the CLI tool to control cooper
 
 ## Installing
