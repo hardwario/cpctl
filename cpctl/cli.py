@@ -88,18 +88,22 @@ def node_list(ctx):
 
 @node.command("attach")
 @click.argument('serial')
+@click.argument('key')
 @click.pass_context
-def node_attach(ctx, serial):
+def node_attach(ctx, serial, key):
     '''Attach node'''
     if not re.match("^[0-9]{16}$", serial):
         raise CliException("serial bad format")
+
+    if not re.match("^[0-9abcdef]{32}$", key):
+        raise CliException("serial key format")
 
     node_list = ctx.obj['at'].command("$LIST")
 
     if serial in node_list:
         raise CliException("Node is in node list")
 
-    ctx.obj['at'].command("$ATTACH=" + serial)
+    ctx.obj['at'].command("$ATTACH=%s,%s" % (serial, key))
     ctx.obj['at'].command("&W")
 
     click.echo('OK')
