@@ -8,6 +8,7 @@ import sys
 import time
 import click
 import re
+import binascii
 from .at import AT, ATException
 
 __version__ = '@@VERSION@@'
@@ -142,7 +143,7 @@ def config(ctx):
 @click.option('--set', 'set_channel', type=int, help='New cahnnel')
 @click.pass_context
 def config_channel(ctx, set_channel=None):
-    '''Set channel'''
+    '''Channel'''
     if set_channel is not None:
         if set_channel < 0 or set_channel > 20:
             raise CliException("Bad channel range")
@@ -151,6 +152,28 @@ def config_channel(ctx, set_channel=None):
         ctx.obj['at'].command("&W")
 
     click.echo(ctx.obj['at'].command("$CHANNEL?")[0][1:])
+
+
+@config.command('key')
+@click.option('--set', 'key', type=str, help='Set 128-bit AES key', required=True)
+@click.option('--generate', is_flag=True, help='Generate')
+@click.pass_context
+def config_channel(ctx, key=None, generate=False):
+    '''128-bit AES key'''
+    if key == '--generate':
+        key = binascii.hexlify(os.urandom(16)).decode('ascii')
+
+    if len(key) != 32:
+        raise CliException("The bad length is expected 32 characters.")
+
+    key = key.lower()
+
+    click.echo("Set key: %s" % key)
+
+    ctx.obj['at'].command("$KEY=%s" % key)
+    ctx.obj['at'].command("&W")
+
+    click.echo('OK')
 
 
 @cli.command('info')
