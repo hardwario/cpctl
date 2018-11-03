@@ -21,7 +21,7 @@ setup(
         'Intended Audience :: Science/Research'
     ],
     install_requires=[
-        'click==6.7', 'pyserial==3.4'
+        'click==6.7', 'pyserial==3.4', 'pyzmq>=17.1.2'
     ],
     entry_points='''
         [console_scripts]
