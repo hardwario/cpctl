@@ -9,6 +9,7 @@ import time
 import click
 import re
 import binascii
+import zmq
 from .at import AT, ATException
 
 __version__ = '@@VERSION@@'
@@ -27,36 +28,57 @@ def get_ports():
     return sorted(comports())
 
 
-def select_device(ctx):
-    if 'at' not in ctx.obj:
-        ports = get_ports()
-        if not ports:
+def command(ctx, command):
+    if 'command' in ctx.obj:
+        return ctx.obj['command'](command)
+
+    if ctx.obj['device']:
+        at = AT(ctx.obj['device'])
+        ctx.obj['command'] = at.command
+        return at.command(command)
+
+    elif ctx.obj['zmq']:
+        context = zmq.Context()
+        sock = context.socket(zmq.REQ)
+        sock.connect('tcp://%s' % ctx.obj['zmq'])
+
+        def zmq_command(command):
+            sock.send_string(command)
+            return sock.recv_json()
+        ctx.obj['command'] = zmq_command
+        return zmq_command(command)
+
+    ports = get_ports()
+    if not ports:
+        raise CliException("Unknown device")
+
+    for i, port in enumerate(ports):
+        click.echo("%i %s" % (i, port[0]), err=True)
+    d = click.prompt('Please enter device')
+    for port in ports:
+        if port[0] == d:
+            device = port[0]
+            break
+    else:
+        try:
+            device = ports[int(d)][0]
+        except Exception as e:
             raise CliException("Unknown device")
 
-        for i, port in enumerate(ports):
-            click.echo("%i %s" % (i, port[0]), err=True)
-        d = click.prompt('Please enter device')
-        for port in ports:
-            if port[0] == d:
-                device = port[0]
-                break
-        else:
-            try:
-                device = ports[int(d)][0]
-            except Exception as e:
-                raise CliException("Unknown device")
-
-        ctx.obj['at'] = AT(device)
+    at = AT(device)
+    ctx.obj['command'] = at.command
+    return at.command(command)
 
 
 @click.group()
 @click.option('--device', '-d', type=str, help='Device path.')
+@click.option('--zmq', type=str, help='ZMQ')
 @click.version_option(version=__version__)
 @click.pass_context
-def cli(ctx, device=None):
+def cli(ctx, device=None, zmq=None):
     '''Cooper Control Tool.'''
-    if device:
-        ctx.obj['at'] = AT(device)
+    ctx.obj['device'] = device
+    ctx.obj['zmq'] = zmq
 
 
 @cli.command()
@@ -70,14 +92,13 @@ def devices():
 @click.pass_context
 def node(ctx):
     '''Manage the nodes'''
-    select_device(ctx)
 
 
 @node.command("list")
 @click.pass_context
 def node_list(ctx):
     '''List attached nodes'''
-    node_list = ctx.obj['at'].command("$LIST")
+    node_list = command(ctx, "$LIST")
 
     if node_list:
         for serial in node_list:
@@ -98,13 +119,13 @@ def node_attach(ctx, serial, key):
     if not re.match("^[0-9abcdef]{32}$", key):
         raise CliException("serial key format")
 
-    node_list = ctx.obj['at'].command("$LIST")
+    node_list = command(ctx, "$LIST")
 
     if serial in node_list:
         raise CliException("Node is in node list")
 
-    ctx.obj['at'].command("$ATTACH=%s,%s" % (serial, key))
-    ctx.obj['at'].command("&W")
+    command(ctx, "$ATTACH=%s,%s" % (serial, key))
+    command(ctx, "&W")
 
     click.echo('OK')
 
@@ -117,13 +138,13 @@ def node_detach(ctx, serial):
     if not re.match("^[0-9]{16}$", serial):
         raise CliException("serial bad format")
 
-    node_list = ctx.obj['at'].command("$LIST")
+    node_list = command(ctx, "$LIST")
 
     if serial not in node_list:
         raise CliException("Node is not in node list")
 
-    ctx.obj['at'].command("$DETACH=" + serial)
-    ctx.obj['at'].command("&W")
+    command(ctx, "$DETACH=" + serial)
+    command(ctx, "&W")
     click.echo('OK')
 
 
@@ -131,8 +152,8 @@ def node_detach(ctx, serial):
 @click.pass_context
 def node_purge(ctx):
     '''Detach all nodes'''
-    ctx.obj['at'].command("$PURGE")
-    ctx.obj['at'].command("&W")
+    command(ctx, "$PURGE")
+    command(ctx, "&W")
     click.echo('OK')
 
 
@@ -140,7 +161,6 @@ def node_purge(ctx):
 @click.pass_context
 def config(ctx):
     '''Config'''
-    select_device(ctx)
 
 
 @config.command('channel')
@@ -152,10 +172,10 @@ def config_channel(ctx, set_channel=None):
         if set_channel < 0 or set_channel > 20:
             raise CliException("Bad channel range")
 
-        ctx.obj['at'].command("$CHANNEL=%d" % set_channel)
-        ctx.obj['at'].command("&W")
+        command(ctx, "$CHANNEL=%d" % set_channel)
+        command(ctx, "&W")
 
-    click.echo(ctx.obj['at'].command("$CHANNEL?")[0][1:])
+    click.echo(command(ctx, "$CHANNEL?")[0][1:])
 
 
 @config.command('key')
@@ -174,8 +194,8 @@ def config_channel(ctx, key=None, generate=False):
 
     click.echo("Set key: %s" % key)
 
-    ctx.obj['at'].command("$KEY=%s" % key)
-    ctx.obj['at'].command("&W")
+    command(ctx, "$KEY=%s" % key)
+    command(ctx, "&W")
 
     click.echo('OK')
 
@@ -183,9 +203,8 @@ def config_channel(ctx, key=None, generate=False):
 @cli.command('info')
 @click.pass_context
 def info(ctx):
-    select_device(ctx)
-    click.echo('Model: ' + ctx.obj['at'].command("+CGMM")[0][7:])
-    click.echo('ID:    ' + ctx.obj['at'].command("+CGSN")[0][7:])
+    click.echo('Model: ' + command(ctx, "+CGMM")[0][7:])
+    click.echo('ID:    ' + command(ctx, "+CGSN")[0][7:])
 
 
 def main():
