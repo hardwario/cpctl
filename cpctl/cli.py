@@ -70,6 +70,16 @@ def command(ctx, command):
     return at.command(command)
 
 
+def is_node_in_list(ctx, serial):
+    node_list = command(ctx, "$LIST")
+
+    for row in node_list:
+        s = row.split(',', 1)[0]
+        if s == serial:
+            return True
+    return False
+
+
 @click.group()
 @click.option('--device', '-d', type=str, help='Device path.')
 @click.option('--zmq', type=str, help='ZMQ')
@@ -110,8 +120,9 @@ def node_list(ctx):
 @node.command("attach")
 @click.argument('serial')
 @click.argument('key')
+@click.option('--alias', 'alias', type=str, help='Set alias')
 @click.pass_context
-def node_attach(ctx, serial, key):
+def node_attach(ctx, serial, key, alias=""):
     '''Attach node'''
     if not re.match("^[0-9]{16}$", serial):
         raise CliException("serial bad format")
@@ -119,12 +130,14 @@ def node_attach(ctx, serial, key):
     if not re.match("^[0-9abcdef]{32}$", key):
         raise CliException("serial key format")
 
-    node_list = command(ctx, "$LIST")
-
-    if serial in node_list:
+    if is_node_in_list(ctx, serial):
         raise CliException("Node is in node list")
 
-    command(ctx, "$ATTACH=%s,%s" % (serial, key))
+    if alias:
+        command(ctx, '$ATTACH=%s,%s,"%s"' % (serial, key, alias))
+    else:
+        command(ctx, '$ATTACH=%s,%s' % (serial, key))
+
     command(ctx, "&W")
 
     click.echo('OK')
@@ -138,9 +151,7 @@ def node_detach(ctx, serial):
     if not re.match("^[0-9]{16}$", serial):
         raise CliException("serial bad format")
 
-    node_list = command(ctx, "$LIST")
-
-    if serial not in node_list:
+    if not is_node_in_list(ctx, serial):
         raise CliException("Node is not in node list")
 
     command(ctx, "$DETACH=" + serial)
