@@ -15,11 +15,12 @@ class ATException(Exception):
 class AT:
     '''Class AT communication with device.'''
 
-    def __init__(self, device):
+    def __init__(self, device, debug=False):
         '''Open device and flush buffers.'''
         exclusive = False if os.name == 'nt' or sys.platform == 'win32' else True
         self._device = device
         self._ser = None
+        self._debug = debug
 
     def _connect(self):
         if self._ser:
@@ -41,7 +42,8 @@ class AT:
                 raise ATException('Communication error occurred!')
             line = line.decode('ascii')
 
-            # print("line:", repr(line))
+            if self._debug:
+                print("RX :", repr(line))
             if line[0] == '{':
                 continue
             if line[0] == '#':
@@ -61,6 +63,9 @@ class AT:
 
     def command(self, command):
         command = 'AT' + command + '\r\n'
+        command = command.encode('ascii')
+        if self._debug:
+            print('TX:', repr(command))
         self._connect()
-        self._ser.write(command.encode('ascii'))
+        self._ser.write(command)
         return self._read_response()
