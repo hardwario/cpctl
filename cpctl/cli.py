@@ -29,23 +29,25 @@ def get_ports():
 
 
 def command(ctx, command):
-    if 'command' in ctx.obj:
-        return ctx.obj['command'](command)
+    obj = ctx if isinstance(ctx, dict) else ctx.obj
 
-    if ctx.obj['device']:
-        at = AT(ctx.obj['device'])
-        ctx.obj['command'] = at.command
+    if 'command' in obj:
+        return obj['command'](command)
+
+    if obj['device']:
+        at = AT(obj['device'])
+        obj['command'] = at.command
         return at.command(command)
 
-    elif ctx.obj['zmq']:
+    elif obj['zmq']:
         context = zmq.Context()
         sock = context.socket(zmq.REQ)
-        sock.connect('tcp://%s' % ctx.obj['zmq'])
+        sock.connect('tcp://%s' % obj['zmq'])
 
         def zmq_command(command):
             sock.send_string(command)
             return sock.recv_json()
-        ctx.obj['command'] = zmq_command
+        obj['command'] = zmq_command
         return zmq_command(command)
 
     ports = get_ports()
@@ -66,7 +68,7 @@ def command(ctx, command):
             raise CliException("Unknown device")
 
     at = AT(device)
-    ctx.obj['command'] = at.command
+    obj['command'] = at.command
     return at.command(command)
 
 
@@ -192,8 +194,10 @@ def config_channel(ctx, set_channel=None):
 @config.command('key')
 @click.option('--set', 'key', type=str, help='Set 128-bit AES key', required=True)
 @click.option('--generate', is_flag=True, help='Generate')
+@click.option('--attach-to-device', 'attach_device', type=str)
+@click.option('--attach-to-zmq', 'attach_zmq', type=str)
 @click.pass_context
-def config_channel(ctx, key=None, generate=False):
+def config_channel(ctx, key=None, generate=False, attach_device=None, attach_zmq=None):
     '''128-bit AES key'''
     if key == '--generate':
         key = binascii.hexlify(os.urandom(16)).decode('ascii')
@@ -203,12 +207,19 @@ def config_channel(ctx, key=None, generate=False):
 
     key = key.lower()
 
-    click.echo("Set key: %s" % key)
-
     command(ctx, "$KEY=%s" % key)
     command(ctx, "&W")
 
-    click.echo('OK')
+    serial = command(ctx, "+CGSN")[0][7:]
+
+    if attach_device or attach_zmq:
+        gwctx = {'device': attach_device, 'zmq': attach_zmq}
+        if is_node_in_list(gwctx, serial):
+            command(gwctx, "$DETACH=" + serial)
+        command(gwctx, '$ATTACH=%s,%s' % (serial, key))
+        command(gwctx, "&W")
+
+    click.echo("%s %s" % (serial, key))
 
 
 @cli.command('info')
