@@ -52,7 +52,7 @@ def command(ctx, command):
 
     ports = get_ports()
     if not ports:
-        raise CliException("Unknown device")
+        ctx.fail("Unknown device.")
 
     for i, port in enumerate(ports):
         click.echo("%i %s" % (i, port[0]), err=True)
@@ -65,7 +65,7 @@ def command(ctx, command):
         try:
             device = ports[int(d)][0]
         except Exception as e:
-            raise CliException("Unknown device")
+            ctx.fail("Unknown device.")
 
     at = AT(device)
     obj['command'] = at.command
@@ -83,8 +83,8 @@ def is_node_in_list(ctx, serial):
 
 
 @click.group()
-@click.option('--device', '-d', type=str, help='Device path.')
-@click.option('--zmq', type=str, help='ZMQ')
+@click.option('--device', '-d', type=str, help='Device path.', metavar="DEVICE")
+@click.option('--zmq', type=str, help='ZMQ', metavar="HOST:PORT")
 @click.version_option(version=__version__)
 @click.pass_context
 def cli(ctx, device=None, zmq=None):
@@ -127,13 +127,13 @@ def node_list(ctx):
 def node_attach(ctx, serial, key, alias=""):
     '''Attach node'''
     if not re.match("^[0-9]{16}$", serial):
-        raise CliException("serial bad format")
+        ctx.fail("serial is in bad format.")
 
     if not re.match("^[0-9abcdef]{32}$", key):
-        raise CliException("serial key format")
+        ctx.fail("key is in bad format.")
 
     if is_node_in_list(ctx, serial):
-        raise CliException("Node is in node list")
+        ctx.fail("Already attach.")
 
     if alias:
         command(ctx, '$ATTACH=%s,%s,"%s"' % (serial, key, alias))
@@ -151,10 +151,10 @@ def node_attach(ctx, serial, key, alias=""):
 def node_detach(ctx, serial):
     '''Detach node'''
     if not re.match("^[0-9]{16}$", serial):
-        raise CliException("serial bad format")
+        ctx.fail("serial is in bad format")
 
     if not is_node_in_list(ctx, serial):
-        raise CliException("Node is not in node list")
+        ctx.fail("Node is not attached.")
 
     command(ctx, "$DETACH=" + serial)
     command(ctx, "&W")
@@ -177,13 +177,13 @@ def config(ctx):
 
 
 @config.command('channel')
-@click.option('--set', 'set_channel', type=int, help='New cahnnel')
+@click.option('--set', 'set_channel', type=int, help='New cahnnel (from 0 to 20)')
 @click.pass_context
 def config_channel(ctx, set_channel=None):
     '''Channel'''
     if set_channel is not None:
         if set_channel < 0 or set_channel > 20:
-            raise CliException("Bad channel range")
+            ctx.fail("Bad channel, must by from range from 0 to 20.")
 
         command(ctx, "$CHANNEL=%d" % set_channel)
         command(ctx, "&W")
@@ -192,18 +192,21 @@ def config_channel(ctx, set_channel=None):
 
 
 @config.command('key')
-@click.option('--set', 'key', type=str, help='Set 128-bit AES key', required=True)
+@click.option('--set', 'key', type=str, help='Set 128-bit AES key')
 @click.option('--generate', is_flag=True, help='Generate')
-@click.option('--attach-to-device', 'attach_device', type=str)
-@click.option('--attach-to-zmq', 'attach_zmq', type=str)
+@click.option('--attach-to-device', 'attach_device', type=str, metavar="DEVICE")
+@click.option('--attach-to-zmq', 'attach_zmq', type=str, metavar="HOST:PORT")
 @click.pass_context
 def config_channel(ctx, key=None, generate=False, attach_device=None, attach_zmq=None):
     '''128-bit AES key'''
-    if key == '--generate':
+    if generate:
         key = binascii.hexlify(os.urandom(16)).decode('ascii')
 
+    if not key:
+        ctx.fail('Missing option "--set" or "--generate".')
+
     if len(key) != 32:
-        raise CliException("The bad length is expected 32 characters.")
+        ctx.fail("The key length is expected 32 characters.")
 
     key = key.lower()
 
