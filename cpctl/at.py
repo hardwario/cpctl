@@ -32,8 +32,18 @@ class AT:
         if self._ser:
             return
         try:
-            self._ser = serial.Serial(self._device, baudrate=115200, timeout=3)
-        except Exception as e:
+            self._ser = serial.Serial(self._device,
+                                      baudrate=115200,
+                                      bytesize=serial.EIGHTBITS,
+                                      parity=serial.PARITY_NONE,
+                                      stopbits=serial.STOPBITS_ONE,
+                                      timeout=1,
+                                      xonxoff=False,
+                                      rtscts=False,
+                                      dsrdtr=False)
+        except serial.serialutil.SerialException as e:
+            if e.errno == 2:
+                raise ATException('Could not open device %s' % device)
             raise ATException(str(e))
 
         self._lock()
