@@ -9,8 +9,8 @@ import time
 import click
 import re
 import binascii
-import zmq
-from .at import AT, ATException
+from .at import ATException
+from .utils import *
 
 __version__ = '@@VERSION@@'
 
@@ -18,58 +18,6 @@ __version__ = '@@VERSION@@'
 class CliException(Exception):
     '''Generic cli error exception.'''
     pass
-
-
-def get_ports():
-    if os.name == 'nt' or sys.platform == 'win32':
-        from serial.tools.list_ports_windows import comports
-    elif os.name == 'posix':
-        from serial.tools.list_ports_posix import comports
-    return sorted(comports())
-
-
-def command(ctx, command):
-    obj = ctx if isinstance(ctx, dict) else ctx.obj
-
-    if 'command' in obj:
-        return obj['command'](command)
-
-    if obj['device']:
-        at = AT(obj['device'])
-        obj['command'] = at.command
-        return at.command(command)
-
-    elif obj['zmq']:
-        context = zmq.Context()
-        sock = context.socket(zmq.REQ)
-        sock.connect('tcp://%s' % obj['zmq'])
-
-        def zmq_command(command):
-            sock.send_string(command)
-            return sock.recv_json()
-        obj['command'] = zmq_command
-        return zmq_command(command)
-
-    ports = get_ports()
-    if not ports:
-        ctx.fail("Unknown device.")
-
-    for i, port in enumerate(ports):
-        click.echo("%i %s" % (i, port[0]), err=True)
-    d = click.prompt('Please enter device')
-    for port in ports:
-        if port[0] == d:
-            device = port[0]
-            break
-    else:
-        try:
-            device = ports[int(d)][0]
-        except Exception as e:
-            ctx.fail("Unknown device.")
-
-    at = AT(device)
-    obj['command'] = at.command
-    return at.command(command)
 
 
 def is_node_in_list(ctx, serial):
