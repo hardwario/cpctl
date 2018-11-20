@@ -28,14 +28,18 @@ Usage: cpctl [OPTIONS] COMMAND [ARGS]...
   Cooper Control Tool.
 
 Options:
-  --version          Show the version and exit.
-  -d, --device TEXT  Device path.
-  --help             Show this message and exit.
+  -d, --device DEVICE  Device path.
+  --zmq HOST:PORT      ZMQ
+  --version            Show the version and exit.
+  --help               Show this message and exit.
 
 Commands:
   config   Config
   devices  Print available devices.
+  info     Info
   node     Manage the nodes
+  reset    Reset
+  status   Print status
 
 ```
 
