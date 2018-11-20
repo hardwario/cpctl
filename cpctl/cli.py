@@ -217,6 +217,19 @@ def status(ctx):
         click.echo(line[1:])
 
 
+@cli.command('reset')
+@click.pass_context
+def reset(ctx):
+    '''Reset'''
+    if ctx.obj['zmq']:
+        raise CliException("Zmq doesn't support reset")
+
+    at = create_at(ctx)
+    if at:
+        at.ftdi_reset_sequence()
+        click.echo("OK")
+
+
 def main():
     '''Application entry point.'''
     try:
