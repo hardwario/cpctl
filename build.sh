@@ -49,6 +49,8 @@ if [ -z "${TRAVIS_BUILD_DIR:-}" ]; then
     mkdir -p "$BUILD_DIR"
     cp -r cpctl "$BUILD_DIR"/cpctl
     cp setup.py "$BUILD_DIR"/
+    cp README.md "$BUILD_DIR"/
+    cp README.md "$BUILD_DIR"/README
     cd "$BUILD_DIR"
 fi
 
