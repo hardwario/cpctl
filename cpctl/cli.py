@@ -204,8 +204,17 @@ def config_unlock(ctx, password=None):
 @cli.command('info')
 @click.pass_context
 def info(ctx):
+    '''Info'''
     click.echo('Model: ' + command(ctx, "+CGMM")[0][7:])
     click.echo('ID:    ' + command(ctx, "+CGSN")[0][7:])
+
+
+@cli.command('status')
+@click.pass_context
+def status(ctx):
+    '''Print status'''
+    for line in command(ctx, "$STATUS"):
+        click.echo(line[1:])
 
 
 def main():
