@@ -225,6 +225,34 @@ def config_key(ctx, key=None, generate=False, attach_device=None, attach_zmq=Non
     click.echo("%s %s" % (serial, key))
 
 
+@config.command('lock')
+@click.option('--password', type=str, help='Max 16 char.')
+@click.pass_context
+def config_lock(ctx, password=None):
+    '''Lock'''
+    if password:
+        if len(password) > 16:
+            ctx.fail("Bad password, max 16 char.")
+        command(ctx, '$LOCK="%s"' % password)
+        command(ctx, "&W")
+
+    click.echo('Device is locked.' if command(ctx, "$LOCK?")[0] == '1' else 'Device is unlocked.')
+
+
+@config.command('unlock')
+@click.option('--password', type=str, help='Max 16 char.', required=True)
+@click.pass_context
+def config_unlock(ctx, password=None):
+    '''Lock'''
+    if password:
+        if len(password) > 16:
+            ctx.fail("Bad password, max 16 char.")
+        command(ctx, '$UNLOCK="%s"' % password)
+        command(ctx, "&W")
+
+    click.echo('Device is locked.' if command(ctx, "$LOCK?")[0] == '1' else 'Device is unlocked.')
+
+
 @cli.command('info')
 @click.pass_context
 def info(ctx):
