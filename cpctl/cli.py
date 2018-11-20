@@ -194,10 +194,10 @@ def config_channel(ctx, set_channel=None):
 @config.command('key')
 @click.option('--set', 'key', type=str, help='Set 128-bit AES key')
 @click.option('--generate', is_flag=True, help='Generate')
-@click.option('--attach-to-device', 'attach_device', type=str, metavar="DEVICE")
-@click.option('--attach-to-zmq', 'attach_zmq', type=str, metavar="HOST:PORT")
+@click.option('--add-node-to-dongle', 'attach_device', type=str, metavar="DEVICE")
+@click.option('--add-node-to-dongle-zmq', 'attach_zmq', type=str, metavar="HOST:PORT")
 @click.pass_context
-def config_channel(ctx, key=None, generate=False, attach_device=None, attach_zmq=None):
+def config_key(ctx, key=None, generate=False, attach_device=None, attach_zmq=None):
     '''128-bit AES key'''
     if generate:
         key = binascii.hexlify(os.urandom(16)).decode('ascii')
