@@ -5,6 +5,10 @@ import os
 import sys
 import time
 import serial
+try:
+    import fcntl
+except ImportError:
+    fcntl = None
 
 
 class ATException(Exception):
@@ -30,10 +34,19 @@ class AT:
         except Exception as e:
             raise ATException(str(e))
 
-        time.sleep(0.1)
+        self._lock()
         self._ser.reset_input_buffer()
         self._ser.reset_output_buffer()
+        time.sleep(0.1)
         self._ser.write(b'\x1b')
+
+    def __del__(self):
+        self._unlock()
+        try:
+            self._ser.close()
+        except Exception as e:
+            pass
+        self._ser = None
 
     def _read_line(self):
         while True:
@@ -69,3 +82,17 @@ class AT:
         self._connect()
         self._ser.write(command)
         return self._read_response()
+
+    def _lock(self):
+        if fcntl or not self._ser:
+            return
+        try:
+            fcntl.flock(self._ser.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
+        except Exception as e:
+            raise ATException('Could not lock device %s' % self._device)
+
+    def _unlock(self):
+        if not fcntl or not self._ser:
+            return
+        fcntl.flock(self._ser.fileno(), fcntl.LOCK_UN)
+
