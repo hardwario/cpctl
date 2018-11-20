@@ -138,3 +138,9 @@ class AT:
             fcntl.ioctl(self._ser.fileno(), TIOCSSERIAL, buf)
         except Exception as e:
             pass
+
+    def ftdi_reset_sequence(self, timeout=0.1):
+        self._ser.rts = True
+        self._ser.dtr = False
+        sleep(timeout)
+        self._ser.rts = False
