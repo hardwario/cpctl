@@ -150,7 +150,8 @@ class AT:
             pass
 
     def ftdi_reset_sequence(self, timeout=0.1):
+        self._connect()
         self._ser.rts = True
         self._ser.dtr = False
-        sleep(timeout)
+        time.sleep(timeout)
         self._ser.rts = False
