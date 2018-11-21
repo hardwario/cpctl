@@ -62,4 +62,5 @@ def create_at(ctx):
 
 def command(ctx, command):
     create_at(ctx)
-    return ctx.obj['command'](command)
+    obj = ctx if isinstance(ctx, dict) else ctx.obj
+    return obj['command'](command)
