@@ -43,7 +43,7 @@ class AT:
                                       dsrdtr=False)
         except serial.serialutil.SerialException as e:
             if e.errno == 2:
-                raise ATException('Could not open device %s' % device)
+                raise ATException('Could not open device %s' % self._device)
             raise ATException(str(e))
 
         self._lock()
@@ -98,7 +98,7 @@ class AT:
         return self._read_response()
 
     def _lock(self):
-        if fcntl or not self._ser:
+        if not fcntl or not self._ser:
             return
         try:
             fcntl.flock(self._ser.fileno(), fcntl.LOCK_EX | fcntl.LOCK_NB)
