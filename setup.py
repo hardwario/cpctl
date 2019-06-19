@@ -3,10 +3,11 @@ from os import path
 
 this_directory = path.abspath(path.dirname(__file__))
 
-for name in ('README', 'README.md'):
-    if path.exists(path.join(this_directory, name)):
-        with open(path.join(this_directory, name), encoding='utf-8') as f:
-            long_description = f.read()
+with open(path.join(this_directory, 'README.md'), encoding='utf-8') as f:
+    long_description = f.read()
+
+with open('requirements.txt', 'r') as f:
+    requirements = f.read()
 
 setup(
     name='cpctl',
@@ -28,13 +29,11 @@ setup(
         'Environment :: Console',
         'Intended Audience :: Science/Research'
     ],
-    install_requires=[
-        'click==6.7', 'pyserial==3.4', 'pyzmq>=17.1.2'
-    ],
+    install_requires=requirements,
     entry_points='''
         [console_scripts]
         cpctl=cpctl.cli:main
     ''',
     long_description=long_description,
-    long_description_content_type='text/markdown',
+    long_description_content_type='text/markdown'
 )
